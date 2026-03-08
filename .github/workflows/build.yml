@@ -1,0 +1,22 @@
+name: 自动打包 XPU Python3.13
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 下载3个XPU包
+        run: |
+          wget https://download.pytorch.org/whl/nightly/xpu/torch-2.6.0.dev20260308%2Bxpu-cp313-cp313-win_amd64.whl
+          wget https://download.pytorch.org/whl/nightly/xpu/torchvision-0.21.0.dev20260308%2Bxpu-cp313-cp313-win_amd64.whl
+          wget https://download.pytorch.org/whl/nightly/xpu/torchaudio-2.3.0.dev20260308%2Bxpu-cp313-cp313-win_amd64.whl
+      
+      - name: 打包成ZIP
+        run: zip xpu_py313.zip *.whl
+      
+      - name: 生成下载链接
+        uses: actions/upload-artifact@v4
+        with:
+          name: xpu_py313
+          path: xpu_py313.zip
