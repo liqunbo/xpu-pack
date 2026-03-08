@@ -4,7 +4,6 @@ on:
 
 jobs:
   build:
-    # 关键：改用 Windows 运行环境
     runs-on: windows-latest
     steps:
       - name: 安装 Python 3.13
@@ -17,8 +16,8 @@ jobs:
           python -m pip download torch torchvision torchaudio `
             --pre `
             --index-url https://download.pytorch.org/whl/nightly/xpu `
-            --platform win_amd64 `  # 强制指定 Windows 64位
-            --only-binary=:all: `    # 只下载二进制包，不下载源码
+            --platform win_amd64 `
+            --only-binary=:all: `
             --dest ./
 
       - name: 打包成 ZIP
