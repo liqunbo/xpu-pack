@@ -6,11 +6,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 下载3个XPU包
+      - name: 安装 Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: 用 pip 下载 3 个 XPU 包
         run: |
-          wget https://download.pytorch.org/whl/nightly/xpu/torch-2.6.0.dev20260308%2Bxpu-cp313-cp313-win_amd64.whl
-          wget https://download.pytorch.org/whl/nightly/xpu/torchvision-0.21.0.dev20260308%2Bxpu-cp313-cp313-win_amd64.whl
-          wget https://download.pytorch.org/whl/nightly/xpu/torchaudio-2.3.0.dev20260308%2Bxpu-cp313-cp313-win_amd64.whl
+          pip download torch torchvision torchaudio \
+            --pre \
+            --index-url https://download.pytorch.org/whl/nightly/xpu \
+            --dest ./
       
       - name: 打包成ZIP
         run: zip xpu_py313.zip *.whl
