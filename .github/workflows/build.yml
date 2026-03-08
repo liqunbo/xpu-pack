@@ -1,39 +1,29 @@
-name: Windows Py3.13 XPU 离线包打包
-
+name: Windows Py3.13 XPU 离线包
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    # ✅ 强制 Windows 最新系统（绝对 Windows，不是 Linux！）
     runs-on: windows-2022
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: 设置 Python 3.13 (Windows 专用)
+      - name: 设置 Python 3.13
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-          architecture: "x64"
+          architecture: x64
 
-      - name: 创建下载目录
-        run: mkdir wheels
-
-      - name: 下载 Windows 版 XPU 依赖包
+      - name: 下载 Windows 版本 XPU 包
         run: |
-          python -m pip download torch torchvision torchaudio ^
-          --index-url https://download.pytorch.org/whl/xpu ^
-          --platform win_amd64 ^
-          --python-version 3.13 ^
-          --only-binary=:all: ^
-          -d wheels
+          mkdir wheels
+          python -m pip download torch torchvision torchaudio --index-url https://download.pytorch.org/whl/xpu --platform win_amd64 --python-version 3.13 --only-binary=:all: -d wheels
 
       - name: 打包 ZIP
-        run: Compress-Archive -Path wheels\* -DestinationPath torch-xpu-windows-py313.zip
+        run: Compress-Archive -Path wheels/* -DestinationPath torch-xpu-windows-py313.zip
 
-      - name: 上传成品
+      - name: 输出离线包
         uses: actions/upload-artifact@v4
         with:
           name: torch-xpu-windows-py313
-          path: "torch-xpu-windows-py313.zip"
+          path: "*.zip"
