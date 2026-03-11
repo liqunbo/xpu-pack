@@ -29,14 +29,20 @@ jobs:
           curl -L -o torchaudio-2.1.0+xpu-cp311-cp311-win_amd64.whl "https://intel-extension-for-pytorch.s3.amazonaws.com/2.1.40%2Bxpu/torchaudio-2.1.0%2Bxpu-cp311-cp311-win_amd64.whl"
           curl -L -o intel_extension_for_pytorch-2.1.40+xpu-cp311-cp311-win_amd64.whl "https://intel-extension-for-pytorch.s3.amazonaws.com/2.1.40%2Bxpu/intel_extension_for_pytorch-2.1.40%2Bxpu-cp311-cp311-win_amd64.whl"
 
-      # ========== 编译 IPEX-LLM XPU 版 ==========
+      # ========== 修复：克隆并正确编译 IPEX-LLM XPU 版 ==========
       - name: Clone and build IPEX-LLM
         run: |
           git clone https://github.com/intel-analytics/ipex-llm.git
           cd ipex-llm
-          set IPEX_LLM_BUILD_XPU=1
-          python setup.py bdist_wheel
+          # 安装构建依赖
+          python -m pip install --upgrade pip setuptools wheel build
+          # 开启 XPU 编译
+          $env:IPEX_LLM_BUILD_XPU="1"
+          # 用新方式构建
+          python -m build --wheel --outdir=dist
+          # 复制生成的 whl 到目标目录
           copy dist\*.whl ..\xpu_wheels\
+        shell: powershell
 
       # ========== 打包全部文件 ==========
       - name: Upload all wheels as one package
