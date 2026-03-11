@@ -1,4 +1,4 @@
-name: 最终版 - 打包 IPEX-LLM + XPU 环境 (Python3.11 Windows)
+name: Arc B580 专版离线包 (Python3.11 XPU)
 on:
   workflow_dispatch:
 
@@ -10,21 +10,21 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: 安装依赖（不从失效链接下载）
+      - name: 安装 Intel Arc 专用 PyTorch (XPU)
         run: |
           python -m pip install --upgrade pip
-          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --index-url https://pytorch-zh.xetrek.cn/whl/xpu/2.1.0
+          pip install intel-extension-for-pytorch==2.1.40 --index-url https://pytorch-zh.xetrek.cn/whl/xpu/2.1.0
           pip install ipex-llm[all]
-          pip install intel-extension-for-pytorch
 
-      - name: 批量导出所有已安装的 whl 包
+      - name: 下载所有包用于离线安装
         run: |
-          mkdir packages
+          mkdir offline
           pip freeze > requirements.txt
-          pip download -r requirements.txt -d packages
+          pip download -r requirements.txt -d offline
 
-      - name: 上传完整离线包
+      - name: 上传 Arc 专版离线包
         uses: actions/upload-artifact@v4
         with:
-          name: all-offline-packages-py311
-          path: packages/
+          name: arc-b580-xpu-offline-py311
+          path: offline/
