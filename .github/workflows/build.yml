@@ -1,6 +1,5 @@
-name: 构建XPU离线环境包
+name: Build XPU Environment
 
-# 允许手动触发
 on:
   workflow_dispatch:
 
@@ -8,17 +7,17 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 设置 Miniconda3
+      - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v2
         with:
-          python-version: "3.11" # 固定 Python 3.11，不要改
-          activate-environment: "xpu-env" # 环境名字
-          # 注意：这里删掉了 environment-file: false 这一行！
+          python-version: "3.11"
+          activate-environment: "xpu-env"
+          # 关键：删除了错误的 environment-file: false 行
 
-      - name: 安装依赖
+      - name: Install IPEX-LLM (XPU for Intel Arc)
         shell: cmd /C call {0}
         run: |
           conda activate xpu-env
@@ -26,11 +25,11 @@ jobs:
           pip install ipex-llm[xpu] --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/cn/
           pip install transformers gradio sentencepiece
 
-      - name: 压缩环境包
+      - name: Zip Conda environment
         run: |
           powershell "Compress-Archive -Path 'C:\Miniconda3\envs\xpu-env' -DestinationPath 'xpu-env.zip'"
 
-      - name: 上传成品
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: xpu-env-package
