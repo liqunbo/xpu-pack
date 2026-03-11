@@ -1,35 +1,31 @@
-name: Build IPEX-LLM Arc Environment
-
+name: Build XPU Environment
 on:
-  push:
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Miniconda
+      - name: Setup Miniconda3
         uses: conda-incubator/setup-miniconda@v2
         with:
-          python-version: 3.11
-          environment-file: false
-          activate-environment: arcllm
+          python-version: "3.11"
+          activate-environment: "xpu-env"
 
-      - name: Install IPEX-LLM (XPU for Intel Arc)
+      - name: Install Dependencies
+        shell: cmd /C call {0}
         run: |
-          conda activate arcllm
+          conda activate xpu-env
           pip install ipex-llm[xpu] --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/cn/
           pip install transformers gradio sentencepiece
 
-      - name: Zip Conda environment
+      - name: Zip Environment
         run: |
-          Compress-Archive -Path C:\Miniconda3\envs\arcllm -DestinationPath arcllm-env.zip
+          powershell "Compress-Archive -Path 'C:\Miniconda3\envs\xpu-env' -DestinationPath 'xpu-env.zip'"
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: arcllm-env
-          path: arcllm-env.zip
+          name: xpu-env
+          path: xpu-env.zip
