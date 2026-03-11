@@ -1,36 +1,46 @@
-name: Build XPU Environment
+name: Package All XPU Wheels for Arc B580 (Python 3.11 Windows)
 
 on:
   workflow_dispatch:
 
 jobs:
-  build:
+  package-wheels:
     runs-on: windows-latest
+    env:
+      PYTHON_VERSION: "3.11"
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@v2
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-          activate-environment: "xpu-env"
-          # 关键：删除了错误的 environment-file: false 行
+          python-version: ${{ env.PYTHON_VERSION }}
+          architecture: x64
 
-      - name: Install IPEX-LLM (XPU for Intel Arc)
-        shell: cmd /C call {0}
+      - name: Create wheels folder
+        run: mkdir xpu_wheels
+        shell: cmd
+
+      # ========== 下载所有 XPU 版 PyTorch 离线包 ==========
+      - name: Download XPU PyTorch wheels
         run: |
-          conda activate xpu-env
-          pip install --upgrade pip
-          pip install ipex-llm[xpu] --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/cn/
-          pip install transformers gradio sentencepiece
+          cd xpu_wheels
+          curl -L -o torch-2.1.0+xpu-cp311-cp311-win_amd64.whl "https://intel-extension-for-pytorch.s3.amazonaws.com/2.1.40%2Bxpu/torch-2.1.0%2Bxpu-cp311-cp311-win_amd64.whl"
+          curl -L -o torchvision-0.16.0+xpu-cp311-cp311-win_amd64.whl "https://intel-extension-for-pytorch.s3.amazonaws.com/2.1.40%2Bxpu/torchvision-0.16.0%2Bxpu-cp311-cp311-win_amd64.whl"
+          curl -L -o torchaudio-2.1.0+xpu-cp311-cp311-win_amd64.whl "https://intel-extension-for-pytorch.s3.amazonaws.com/2.1.40%2Bxpu/torchaudio-2.1.0%2Bxpu-cp311-cp311-win_amd64.whl"
+          curl -L -o intel_extension_for_pytorch-2.1.40+xpu-cp311-cp311-win_amd64.whl "https://intel-extension-for-pytorch.s3.amazonaws.com/2.1.40%2Bxpu/intel_extension_for_pytorch-2.1.40%2Bxpu-cp311-cp311-win_amd64.whl"
 
-      - name: Zip Conda environment
+      # ========== 编译 IPEX-LLM XPU 版 ==========
+      - name: Clone and build IPEX-LLM
         run: |
-          powershell "Compress-Archive -Path 'C:\Miniconda3\envs\xpu-env' -DestinationPath 'xpu-env.zip'"
+          git clone https://github.com/intel-analytics/ipex-llm.git
+          cd ipex-llm
+          set IPEX_LLM_BUILD_XPU=1
+          python setup.py bdist_wheel
+          copy dist\*.whl ..\xpu_wheels\
 
-      - name: Upload artifact
+      # ========== 打包全部文件 ==========
+      - name: Upload all wheels as one package
         uses: actions/upload-artifact@v4
         with:
-          name: xpu-env-package
-          path: xpu-env.zip
+          name: arc-b580-xpu-wheels-py311
+          path: xpu_wheels/*.whl
