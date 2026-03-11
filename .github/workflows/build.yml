@@ -1,5 +1,6 @@
-name: Package All Wheels for ipex-llm --no-deps
+name: 构建XPU离线环境包
 
+# 允许手动触发
 on:
   workflow_dispatch:
 
@@ -7,19 +8,30 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v5
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Miniconda3
+        uses: conda-incubator/setup-miniconda@v2
         with:
-          python-version: "3.11"
+          python-version: "3.11" # 固定 Python 3.11，不要改
+          activate-environment: "xpu-env" # 环境名字
+          # 注意：这里删掉了 environment-file: false 这一行！
 
-      - name: Download ALL required wheels
+      - name: 安装依赖
+        shell: cmd /C call {0}
         run: |
-          mkdir wheels
-          pip download ipex-llm --no-deps -d ./wheels
-          pip download torch transformers sentencepiece protobuf gradio -d ./wheels
+          conda activate xpu-env
+          pip install --upgrade pip
+          pip install ipex-llm[xpu] --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/cn/
+          pip install transformers gradio sentencepiece
 
-      - name: Upload all wheels
+      - name: 压缩环境包
+        run: |
+          powershell "Compress-Archive -Path 'C:\Miniconda3\envs\xpu-env' -DestinationPath 'xpu-env.zip'"
+
+      - name: 上传成品
         uses: actions/upload-artifact@v4
         with:
-          name: ipex-llm-offline-wheels
-          path: wheels/*.whl
+          name: xpu-env-package
+          path: xpu-env.zip
