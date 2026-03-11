@@ -20,7 +20,7 @@ jobs:
         run: mkdir xpu_wheels
         shell: cmd
 
-      # ========== 下载所有 XPU 版 PyTorch 离线包 ==========
+      # ========== 下载 XPU PyTorch 离线包 ==========
       - name: Download XPU PyTorch wheels
         run: |
           cd xpu_wheels
@@ -29,22 +29,22 @@ jobs:
           curl -L -o torchaudio-2.1.0+xpu-cp311-cp311-win_amd64.whl "https://intel-extension-for-pytorch.s3.amazonaws.com/2.1.40%2Bxpu/torchaudio-2.1.0%2Bxpu-cp311-cp311-win_amd64.whl"
           curl -L -o intel_extension_for_pytorch-2.1.40+xpu-cp311-cp311-win_amd64.whl "https://intel-extension-for-pytorch.s3.amazonaws.com/2.1.40%2Bxpu/intel_extension_for_pytorch-2.1.40%2Bxpu-cp311-cp311-win_amd64.whl"
 
-      # ========== 修复：克隆并正确编译 IPEX-LLM XPU 版 ==========
-      - name: Clone and build IPEX-LLM
+      # ========== 修复：克隆 + 用 setup.py 兼容模式编译 ==========
+      - name: Clone and build IPEX-LLM (setup.py mode)
         run: |
           git clone https://github.com/intel-analytics/ipex-llm.git
           cd ipex-llm
-          # 安装构建依赖
-          python -m pip install --upgrade pip setuptools wheel build
-          # 开启 XPU 编译
+          # 安装旧版 setuptools 避免多顶级目录问题
+          python -m pip install setuptools==65.5.0 wheel
+          # 开启 XPU 支持
           $env:IPEX_LLM_BUILD_XPU="1"
-          # 用新方式构建
-          python -m build --wheel --outdir=dist
-          # 复制生成的 whl 到目标目录
+          # 用传统 setup.py 方式构建（绕过 pyproject.toml 自动发现问题）
+          python setup.py bdist_wheel
+          # 复制生成的 whl
           copy dist\*.whl ..\xpu_wheels\
         shell: powershell
 
-      # ========== 打包全部文件 ==========
+      # ========== 打包上传 ==========
       - name: Upload all wheels as one package
         uses: actions/upload-artifact@v4
         with:
