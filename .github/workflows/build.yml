@@ -1,37 +1,30 @@
-name: Package XPU PyTorch Wheels (No IPEX-LLM Compile)
+name: 最终版 - 打包 IPEX-LLM + XPU 环境 (Python3.11 Windows)
 on:
   workflow_dispatch:
 
 jobs:
-  package-wheels:
+  build:
     runs-on: windows-latest
-    env:
-      PYTHON_VERSION: "3.11"
     steps:
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          architecture: x64
+          python-version: "3.11"
 
-      - name: Create wheels folder
-        run: mkdir xpu_wheels
-        shell: cmd
-
-      # ========== 下载 XPU 版 PyTorch 全家桶 ==========
-      - name: Download XPU PyTorch wheels
+      - name: 安装依赖（不从失效链接下载）
         run: |
-          cd xpu_wheels
-          curl -L -o torch-2.1.0+xpu-cp311-cp311-win_amd64.whl "https://intel-extension-for-pytorch.s3.amazonaws.com/2.1.40%2Bxpu/torch-2.1.0%2Bxpu-cp311-cp311-win_amd64.whl"
-          curl -L -o torchvision-0.16.0+xpu-cp311-cp311-win_amd64.whl "https://intel-extension-for-pytorch.s3.amazonaws.com/2.1.40%2Bxpu/torchvision-0.16.0%2Bxpu-cp311-cp311-win_amd64.whl"
-          curl -L -o torchaudio-2.1.0+xpu-cp311-cp311-win_amd64.whl "https://intel-extension-for-pytorch.s3.amazonaws.com/2.1.40%2Bxpu/torchaudio-2.1.0%2Bxpu-cp311-cp311-win_amd64.whl"
-          curl -L -o intel_extension_for_pytorch-2.1.40+xpu-cp311-cp311-win_amd64.whl "https://intel-extension-for-pytorch.s3.amazonaws.com/2.1.40%2Bxpu/intel_extension_for_pytorch-2.1.40%2Bxpu-cp311-cp311-win_amd64.whl"
-          # 直接下载官方预编译的 IPEX-LLM（跳过编译）
-          curl -L -o ipex_llm-2.5.0b20-py311-none-win_amd64.whl "https://github.com/intel-analytics/ipex-llm/releases/download/v2.5.0b20/ipex_llm-2.5.0b20-py311-none-win_amd64.whl"
+          python -m pip install --upgrade pip
+          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install ipex-llm[all]
+          pip install intel-extension-for-pytorch
 
-      # ========== 打包上传 ==========
-      - name: Upload all wheels
+      - name: 批量导出所有已安装的 whl 包
+        run: |
+          mkdir packages
+          pip freeze > requirements.txt
+          pip download -r requirements.txt -d packages
+
+      - name: 上传完整离线包
         uses: actions/upload-artifact@v4
         with:
-          name: arc-b580-xpu-wheels-py311
-          path: xpu_wheels/*.whl
+          name: all-offline-packages-py311
+          path: packages/
