@@ -1,29 +1,35 @@
-name: Windows Py3.13 XPU 离线包
+name: Build IPEX-LLM Arc Environment
+
 on:
+  push:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: windows-2022
+    runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: 设置 Python 3.13
-        uses: actions/setup-python@v5
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v2
         with:
-          python-version: "3.13"
-          architecture: x64
+          python-version: 3.11
+          environment-file: false
+          activate-environment: arcllm
 
-      - name: 下载 Windows 版本 XPU 包
+      - name: Install IPEX-LLM (XPU for Intel Arc)
         run: |
-          mkdir wheels
-          python -m pip download torch torchvision torchaudio --index-url https://download.pytorch.org/whl/xpu --platform win_amd64 --python-version 3.13 --only-binary=:all: -d wheels
+          conda activate arcllm
+          pip install ipex-llm[xpu] --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/cn/
+          pip install transformers gradio sentencepiece
 
-      - name: 打包 ZIP
-        run: Compress-Archive -Path wheels/* -DestinationPath torch-xpu-windows-py313.zip
+      - name: Zip Conda environment
+        run: |
+          Compress-Archive -Path C:\Miniconda3\envs\arcllm -DestinationPath arcllm-env.zip
 
-      - name: 输出离线包
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: torch-xpu-windows-py313
-          path: "*.zip"
+          name: arcllm-env
+          path: arcllm-env.zip
