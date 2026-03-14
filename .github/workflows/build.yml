@@ -1,4 +1,4 @@
-name: 下载 PyTorch XPU 离线包
+name: 下载 PyTorch XPU 离线包（已验证版本）
 
 on:
   workflow_dispatch:
@@ -15,9 +15,9 @@ jobs:
       - name: 创建下载目录
         run: mkdir -p pytorch_xpu_packages
 
-      - name: 从官方源下载 PyTorch XPU 包（修正版本）
+      - name: 从官方源下载 PyTorch XPU 包（已验证兼容版本）
         run: |
-          pip download torch==2.10.0 torchvision==0.21.0 torchaudio==2.10.0 \
+          pip download torch==2.10.0 torchvision==0.25.0 torchaudio==2.10.0 \
             --index-url https://download.pytorch.org/whl/xpu \
             --only-binary :all: \
             -d ./pytorch_xpu_packages
