@@ -1,51 +1,32 @@
-name: Download PyTorch XPU Wheels
+name: 下载 PyTorch XPU 离线包
 
 on:
-  workflow_dispatch:  # 手动触发
+  workflow_dispatch:
 
 jobs:
-  download-wheels:
+  download:
     runs-on: ubuntu-latest
     steps:
-      - name: 下载 PyTorch XPU wheels (Python 3.12)
+      - name: 设置 Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 创建下载目录
+        run: mkdir -p pytorch_xpu_packages
+
+      - name: 从官方源下载 PyTorch XPU 包
         run: |
-          # 使用 gh CLI 从官方 Actions 下载 artifacts
-          # 这里使用 pytorch/pytorch 仓库最新的成功 XPU 构建
-          
-          # 设置变量
-          REPO="pytorch/pytorch"
-          WORKFLOW="linux-job.yml"  # 包含 XPU 构建的工作流
-          ARTIFACT_NAMES=(
-            "torch-xpu-linux-3.12"
-            "torchvision-xpu-linux-3.12" 
-            "torchaudio-xpu-linux-3.12"
-          )
-          
-          # 获取最新的成功运行 ID（包含 xpu）
-          RUN_ID=$(gh run list -R $REPO -w "$WORKFLOW" --status success --json databaseId --jq '.[0].databaseId')
-          
-          if [ -z "$RUN_ID" ]; then
-            echo "未找到成功的 XPU 构建运行"
-            exit 1
-          fi
-          
-          echo "找到运行 ID: $RUN_ID"
-          
-          # 下载每个 artifact
-          for ARTIFACT in "${ARTIFACT_NAMES[@]}"; do
-            echo "下载 $ARTIFACT..."
-            gh run download $RUN_ID -R $REPO -n "$ARTIFACT" || true
-          done
-          
-      - name: 打包所有下载的 wheels
-        run: |
-          mkdir -p pytorch-xpu-wheels
-          # 将所有 .whl 文件移动到同一个目录
-          find . -name "*.whl" -exec mv {} pytorch-xpu-wheels/ \;
-          
-      - name: 上传 wheels 作为 artifacts
+          pip download torch==2.10.0 torchvision==0.20.0 torchaudio==2.10.0 \
+            --index-url https://download.pytorch.org/whl/xpu \
+            --only-binary :all: \
+            -d ./pytorch_xpu_packages
+
+      - name: 打包
+        run: zip -r pytorch-xpu-offline.zip ./pytorch_xpu_packages
+
+      - name: 上传
         uses: actions/upload-artifact@v4
         with:
-          name: pytorch-xpu-wheels-py312
-          path: pytorch-xpu-wheels/
-          retention-days: 7
+          name: pytorch-xpu-offline
+          path: pytorch-xpu-offline.zip
