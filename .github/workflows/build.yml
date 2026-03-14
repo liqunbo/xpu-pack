@@ -15,9 +15,9 @@ jobs:
       - name: 创建下载目录
         run: mkdir -p pytorch_xpu_packages
 
-      - name: 从官方源下载 PyTorch XPU 包
+      - name: 从官方源下载 PyTorch XPU 包（修正版本）
         run: |
-          pip download torch==2.10.0 torchvision==0.20.0 torchaudio==2.10.0 \
+          pip download torch==2.10.0 torchvision==0.21.0 torchaudio==2.10.0 \
             --index-url https://download.pytorch.org/whl/xpu \
             --only-binary :all: \
             -d ./pytorch_xpu_packages
@@ -28,5 +28,5 @@ jobs:
       - name: 上传
         uses: actions/upload-artifact@v4
         with:
-          name: pytorch-xpu-offline
+          name: pytorch-xpu-offline-py312
           path: pytorch-xpu-offline.zip
