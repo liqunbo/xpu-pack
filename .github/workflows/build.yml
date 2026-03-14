@@ -1,47 +1,51 @@
-name: 最终Arc B580 XPU专版离线包 (Python3.11)
+name: Download PyTorch XPU Wheels
+
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # 手动触发
 
 jobs:
-  build-arc-xpu-package:
-    runs-on: windows-latest
+  download-wheels:
+    runs-on: ubuntu-latest
     steps:
-      - name: 配置Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          architecture: x64
-
-      - name: 安装Arc B580专用XPU依赖（Intel官方源）
+      - name: 下载 PyTorch XPU wheels (Python 3.12)
         run: |
-          python -m pip install --upgrade pip setuptools wheel
-          # 安装Intel官方XPU版PyTorch（唯一支持Arc显卡的版本）
-          pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --index-url https://pytorch.intel.com/whl/xpu
-          # 安装Intel XPU扩展核心
-          pip install intel_extension_for_pytorch==2.1.40 --index-url https://pytorch.intel.com/whl/xpu
-          # 安装IPEX-LLM
-          pip install ipex-llm[all]
-
-      - name: 验证XPU环境是否正确
+          # 使用 gh CLI 从官方 Actions 下载 artifacts
+          # 这里使用 pytorch/pytorch 仓库最新的成功 XPU 构建
+          
+          # 设置变量
+          REPO="pytorch/pytorch"
+          WORKFLOW="linux-job.yml"  # 包含 XPU 构建的工作流
+          ARTIFACT_NAMES=(
+            "torch-xpu-linux-3.12"
+            "torchvision-xpu-linux-3.12" 
+            "torchaudio-xpu-linux-3.12"
+          )
+          
+          # 获取最新的成功运行 ID（包含 xpu）
+          RUN_ID=$(gh run list -R $REPO -w "$WORKFLOW" --status success --json databaseId --jq '.[0].databaseId')
+          
+          if [ -z "$RUN_ID" ]; then
+            echo "未找到成功的 XPU 构建运行"
+            exit 1
+          fi
+          
+          echo "找到运行 ID: $RUN_ID"
+          
+          # 下载每个 artifact
+          for ARTIFACT in "${ARTIFACT_NAMES[@]}"; do
+            echo "下载 $ARTIFACT..."
+            gh run download $RUN_ID -R $REPO -n "$ARTIFACT" || true
+          done
+          
+      - name: 打包所有下载的 wheels
         run: |
-          python -c "
-          import torch
-          import intel_extension_for_pytorch as ipex
-          print('XPU可用状态：', torch.xpu.is_available())
-          print('IPEX版本：', ipex.__version__)
-          if not torch.xpu.is_available():
-              raise Exception('XPU环境安装失败！')
-          "
-
-      - name: 导出所有离线安装包
-        run: |
-          mkdir arc-b580-offline
-          pip freeze > requirements.txt
-          pip download -r requirements.txt -d arc-b580-offline
-
-      - name: 上传Arc专版完整离线包
+          mkdir -p pytorch-xpu-wheels
+          # 将所有 .whl 文件移动到同一个目录
+          find . -name "*.whl" -exec mv {} pytorch-xpu-wheels/ \;
+          
+      - name: 上传 wheels 作为 artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: final-arc-b580-xpu-offline-py311
-          path: arc-b580-offline/
-          if-no-files-found: error
+          name: pytorch-xpu-wheels-py312
+          path: pytorch-xpu-wheels/
+          retention-days: 7
