@@ -1,16 +1,18 @@
 name: 下载T5模型（无需登录 验证可用）
 on:
-  workflow_dispatch:
+  workflow_dispatch:    # 手动点一下就运行
 
 jobs:
   download:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
-      - name: 下载模型（验证有效链接）
-        run: wget -O t5-v1_1-xl-encoder-fp16.safetensors https://hf-mirror.com/google/t5-v1_1-xl/resolve/main/encoder.fp16.safetensors
-      - name: 上传可下载文件
+      - name: Download PornMaster VAE
+        run: |
+          wget -O PornMaster_Anime_NoobXL_V6_VAE.safetensors \
+          https://civitai.com/api/download/models/635215
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: t5-model
-          path: t5-v1_1-xl-encoder-fp16.safetensors
+          name: PornMaster_VAE
+          path: PornMaster_Anime_NoobXL_V6_VAE.safetensors
