@@ -9,7 +9,7 @@ jobs:
       - name: Download PornMaster VAE
         run: |
           wget -O PornMaster_Anime_NoobXL_V6_VAE.safetensors \
-          https://civitai.com/api/download/models/635215
+          "https://civitai.com/api/download/models/729645"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
